@@ -33,49 +33,6 @@ MediShield is an enterprise-grade AI-powered **Multi-Agent Document Intake and C
 
 ## 🏗️ System Architecture
 
-```mermaid
-graph TD
-    classDef intake fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#fff
-    classDef classifier fill:#0f172a,stroke:#8b5cf6,stroke-width:2px,color:#fff
-    classDef specialist fill:#1e293b,stroke:#06b6d4,stroke-width:2px,color:#fff
-    classDef orchestrator fill:#0f172a,stroke:#10b981,stroke-width:2px,color:#fff
-    classDef storage fill:#1e293b,stroke:#f59e0b,stroke-width:2px,color:#fff
-
-    subgraph INGESTION["1. Document Ingestion Layer"]
-        A["📄 Document Upload (PNG / JPG / PDF)"] :::intake --> B["⚡ FastAPI REST API (/cases/upload)"] :::intake
-    end
-
-    subgraph CLASSIFICATION["2. Document Classification"]
-        B --> C["🔍 Classifier Agent (Groq LLaMA 3.3 / Vision)"] :::classifier
-        C --> D{"Doc Type Routing"} :::classifier
-    end
-
-    subgraph AGENTS["3. Parallel Specialist Multi-Agent Swarm"]
-        D --> E["🆔 KYC Agent<br/>Member ID Verification & ELA Pixel Tamper Analysis"] :::specialist
-        D --> F["📋 Claims Agent<br/>CMS-1500 / CPT & ICD-10 Schema Validation"] :::specialist
-        D --> G["📚 Policy RAG Agent<br/>Vector Search over Gold & Silver Plan PDFs"] :::specialist
-        D --> H["🚨 Fraud Agent<br/>Patient Claim History & Anomaly Scoring"] :::specialist
-    end
-
-    subgraph DECISION["4. Decision & Audit Layer"]
-        E --> I["⚖️ Orchestrator Agent<br/>Weighted Decision Synthesis & Generative Narrative"] :::orchestrator
-        F --> I
-        G --> I
-        H --> I
-        I --> J{"Final Decision"} :::orchestrator
-        J -->|"Confidence >= 80% & Low Risk"| K["✅ APPROVE"] :::orchestrator
-        J -->|"KYC Failed / Schema Invalid"| L["❌ REJECT"] :::orchestrator
-        J -->|"Fraud >= 0.3 or Low Conf"| M["⚠️ ESCALATE"] :::orchestrator
-    end
-
-    subgraph STORAGE_UI["5. Data & Operations UI"]
-        K --> N[("💾 SQLite Database (WAL Mode)")] :::storage
-        L --> N
-        M --> N
-        N --> O["🖥️ Web Case Management UI & Human Review Queue"] :::storage
-        N --> P["📄 PDF Audit Exporter"] :::storage
-    end
-```
 
 ```
                                   ┌───────────────────────────┐
