@@ -18,7 +18,15 @@ REALISTIC_NAMES = [
 ]
 
 def get_patient_name(patient_id: str, filename: str) -> str:
-    seed_str = patient_id or filename
+    # 1. Try to find PT_XXXXX pattern in patient_id or filename
+    pt_match = re.search(r'(PT_\d+)', f"{patient_id} {filename}", re.IGNORECASE)
+    if pt_match:
+        seed_str = pt_match.group(1).upper()
+    else:
+        # 2. Extract base document signature (strip CASE-XXXX prefix if present)
+        clean_name = re.sub(r'^CASE-[A-F0-9]+_', '', filename, flags=re.IGNORECASE)
+        seed_str = patient_id or clean_name
+        
     idx = int(hashlib.md5(seed_str.encode('utf-8')).hexdigest(), 16) % len(REALISTIC_NAMES)
     return REALISTIC_NAMES[idx]
 

@@ -89,11 +89,17 @@ class PipelineGraph:
         # Step 4: Claims Agent
         emit_step("Claims Agent", "Extracting financial and clinical diagnosis/procedure codes...")
         claims_res = claims_agent.process(file_path, case_meta, doc_type=classifier_res.doc_type)
-        case.claims_result = claims_res
-        if claims_res.extracted_fields.patient_name:
+        if case.patient_name:
+            claims_res.extracted_fields.patient_name = case.patient_name
+        elif claims_res.extracted_fields.patient_name:
             case.patient_name = claims_res.extracted_fields.patient_name
-        if claims_res.extracted_fields.policy_number:
+            
+        if case.policy_number:
+            claims_res.extracted_fields.policy_number = case.policy_number
+        elif claims_res.extracted_fields.policy_number:
             case.policy_number = claims_res.extracted_fields.policy_number
+            
+        case.claims_result = claims_res
         emit_step("Claims Agent", f"Extracted Claim Amount: ${claims_res.extracted_fields.claim_amount or 0:,.2f} | CPT: {', '.join(claims_res.extracted_fields.cpt_codes)}", claims_res.model_dump())
 
         # Step 5: Policy RAG Agent
