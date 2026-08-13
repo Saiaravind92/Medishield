@@ -33,7 +33,6 @@ MediShield is an enterprise-grade AI-powered **Multi-Agent Document Intake and C
 
 ## 🏗️ System Architecture
 
-![MediShield System Architecture Diagram](architecture_diagram.png)
 
 ```
                                   ┌───────────────────────────┐
