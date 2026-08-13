@@ -1,0 +1,57 @@
+====================================================================
+  MediShield Platform — Scripts & Tools Overview
+====================================================================
+
+1. build_500_dataset.py
+   ────────────────────
+   Generates and maintains 500 synthetic insurance document PNG files across all 6 categories:
+     - claim_forms/        : CMS-1500 + UB-04 billing forms
+     - id_documents/       : Driver licenses, passports, state IDs
+     - discharge_summaries/: Hospital inpatient discharge reports
+     - prescriptions/      : Physician medical prescription forms
+     - policy_amendments/  : Coverage rider endorsement amendments
+     - unknown/            : Out-of-distribution unreadable scans
+   Updates dataset/metadata.json with fraud labels, edge flags, patient IDs, and policy numbers.
+
+   Run: python scripts/build_500_dataset.py
+
+
+2. evaluate_pipeline.py
+   ────────────────────
+   Runs end-to-end benchmark evaluation across all dataset cases.
+   Calculates Classification Accuracy (20%), Extraction Completeness (20%),
+   Policy Retrieval Quality (15%), Decision Correctness (25%), and Overall Weighted Score.
+
+   Run: python -m backend.evaluate_pipeline
+
+
+3. run_full_system_test.py
+   ───────────────────────
+   Automated end-to-end system verification test suite checking API stats,
+   real-time upload processing, ELA heatmaps, PDF report generation, and human decision overrides.
+
+   Run: python scratch/run_full_system_test.py
+
+
+4. generate_gold_policy.py & generate_silver_policy.py
+   ─────────────────────────────────────────────────────
+   Generates MediShield Gold & Silver plan policy PDFs with 10 bookmarked sections for RAG retrieval.
+   Output: dataset/policies/medishield_gold_plan.pdf, medishield_silver_plan.pdf
+
+
+====================================================================
+  Output Structure
+====================================================================
+  dataset/
+  ├── claim_forms/           (100 PNGs)
+  ├── discharge_summaries/   (100 PNGs)
+  ├── id_documents/          (100 PNGs)
+  ├── prescriptions/         (100 PNGs)
+  ├── policy_amendments/     (100 PNGs)
+  ├── unknown/               ( 4 PNGs)
+  ├── policies/
+  │   ├── medishield_gold_plan.pdf
+  │   └── medishield_silver_plan.pdf
+  └── metadata.json          (500 entries)
+
+====================================================================

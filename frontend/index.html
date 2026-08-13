@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediShield | Multi-Agent Document Intake & Case Management</title>
+    <!-- Google Fonts & Tailwind CSS CDN -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        shield: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            900: '#0f172a',
+                            950: '#090d16',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #090d16;
+            color: #f8fafc;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .glass-card:hover {
+            border-color: rgba(59, 130, 246, 0.4);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(51, 65, 85, 0.8);
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-blue-600 selection:text-white">
+
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-50 glass-panel border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="showView('dashboard')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <i data-lucide="shield-check" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">MediShield AI</h1>
+                    <p class="text-[10px] text-blue-400 font-medium tracking-wider uppercase">Claims Processing Platform</p>
+                </div>
+            </div>
+
+            <!-- Nav Tabs -->
+            <nav class="flex items-center space-x-1 sm:space-x-2">
+                <button onclick="showView('dashboard')" id="nav-dashboard" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-white bg-blue-600/30 border border-blue-500/30 flex items-center space-x-2">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4 text-blue-400"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button onclick="showView('review-queue')" id="nav-review-queue" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 flex items-center space-x-2 transition">
+                    <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i>
+                    <span>Review Queue</span>
+                    <span id="queue-badge" class="ml-1 px-1.5 py-0.5 text-xs bg-amber-500/20 text-amber-300 rounded-full font-mono">0</span>
+                </button>
+                <button onclick="showView('audit-log')" id="nav-audit-log" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 flex items-center space-x-2 transition">
+                    <i data-lucide="file-text" class="w-4 h-4 text-emerald-400"></i>
+                    <span>Audit Log</span>
+                </button>
+            </nav>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center space-x-3">
+                <button onclick="ingestDatasetBatch()" class="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold flex items-center space-x-2 transition">
+                    <i data-lucide="database" class="w-3.5 h-3.5"></i>
+                    <span>Ingest Dataset (25)</span>
+                </button>
+                <button onclick="openUploadModal()" class="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30 text-xs font-bold flex items-center space-x-2 transition">
+                    <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                    <span>Upload Case</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        <!-- DASHBOARD VIEW -->
+        <div id="view-dashboard" class="space-y-6">
+            <!-- Metrics Summary Cards -->
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                <div class="glass-card p-4 rounded-xl border border-slate-800">
+                    <div class="flex items-center justify-between text-slate-400 mb-2">
+                        <span class="text-xs font-semibold uppercase tracking-wider">Total Submissions</span>
+                        <i data-lucide="files" class="w-4 h-4 text-slate-400"></i>
+                    </div>
+                    <div class="text-2xl font-extrabold text-white" id="stat-total">0</div>
+                    <div class="text-[11px] text-slate-500 mt-1">Multi-agent intake</div>
+                </div>
+                <div class="glass-card p-4 rounded-xl border border-slate-800">
+                    <div class="flex items-center justify-between text-emerald-400 mb-2">
+                        <span class="text-xs font-semibold uppercase tracking-wider">Approved</span>
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+                    </div>
+                    <div class="text-2xl font-extrabold text-emerald-400" id="stat-approved">0</div>
+                    <div class="text-[11px] text-slate-500 mt-1">Instant clearance</div>
+                </div>
+                <div class="glass-card p-4 rounded-xl border border-slate-800">
+                    <div class="flex items-center justify-between text-rose-400 mb-2">
+                        <span class="text-xs font-semibold uppercase tracking-wider">Rejected</span>
+                        <i data-lucide="x-circle" class="w-4 h-4 text-rose-400"></i>
+                    </div>
+                    <div class="text-2xl font-extrabold text-rose-400" id="stat-rejected">0</div>
+                    <div class="text-[11px] text-slate-500 mt-1">KYC / Excluded policy</div>
+                </div>
+                <div class="glass-card p-4 rounded-xl border border-slate-800">
+                    <div class="flex items-center justify-between text-amber-400 mb-2">
+                        <span class="text-xs font-semibold uppercase tracking-wider">Escalated</span>
+                        <i data-lucide="alert-octagon" class="w-4 h-4 text-amber-400"></i>
+                    </div>
+                    <div class="text-2xl font-extrabold text-amber-400" id="stat-escalated">0</div>
+                    <div class="text-[11px] text-slate-500 mt-1">Human audit required</div>
+                </div>
+                <div class="glass-card p-4 rounded-xl border border-slate-800">
+                    <div class="flex items-center justify-between text-blue-400 mb-2">
+                        <span class="text-xs font-semibold uppercase tracking-wider">Processing</span>
+                        <div id="stat-processing-icon"><i data-lucide="clock" class="w-4 h-4 text-blue-400"></i></div>
+                    </div>
+                    <div class="text-2xl font-extrabold text-blue-400" id="stat-processing">0</div>
+                    <div class="text-[11px] text-slate-500 mt-1">Active graph execution</div>
+                </div>
+            </div>
+
+            <!-- Controls: Search & Filters -->
+            <div class="glass-panel p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="relative flex-1 max-w-md">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3 text-slate-400"></i>
+                    <input type="text" id="search-input" onkeyup="filterCases()" placeholder="Search patient, policy #, CPT, or case ID..." class="w-full pl-10 pr-4 py-2 bg-slate-900/80 border border-slate-700/60 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500">
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs text-slate-400 font-medium">Status:</span>
+                    <button onclick="setFilterStatus('ALL')" id="filter-status-ALL" class="px-3 py-1 rounded-md text-xs font-bold bg-blue-600 text-white">ALL</button>
+                    <button onclick="setFilterStatus('APPROVE')" id="filter-status-APPROVE" class="px-3 py-1 rounded-md text-xs font-semibold text-slate-400 hover:text-emerald-300 hover:bg-emerald-950/40 border border-transparent">APPROVE</button>
+                    <button onclick="setFilterStatus('REJECT')" id="filter-status-REJECT" class="px-3 py-1 rounded-md text-xs font-semibold text-slate-400 hover:text-rose-300 hover:bg-rose-950/40 border border-transparent">REJECT</button>
+                    <button onclick="setFilterStatus('ESCALATE')" id="filter-status-ESCALATE" class="px-3 py-1 rounded-md text-xs font-semibold text-slate-400 hover:text-amber-300 hover:bg-amber-950/40 border border-transparent">ESCALATE</button>
+                </div>
+            </div>
+
+            <!-- Cases Table -->
+            <div class="glass-panel rounded-xl overflow-hidden border border-slate-800">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-900/90 border-b border-slate-800 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                <th class="py-3 px-4">Case ID & File</th>
+                                <th class="py-3 px-4">Patient / Policy</th>
+                                <th class="py-3 px-4">Document Type</th>
+                                <th class="py-3 px-4">Status & Decision</th>
+                                <th class="py-3 px-4">Confidence</th>
+                                <th class="py-3 px-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cases-tbody" class="divide-y divide-slate-800/60 text-sm">
+                            <tr>
+                                <td colspan="6" class="py-8 text-center text-slate-500">Loading MediShield cases...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Pagination Controls Footer -->
+                <div class="glass-panel px-4 py-3 border-t border-slate-800 flex items-center justify-between">
+                    <div class="text-xs text-slate-400">
+                        Showing <span id="page-start" class="font-bold text-slate-200">0</span> to <span id="page-end" class="font-bold text-slate-200">0</span> of <span id="page-total" class="font-bold text-slate-200">0</span> cases
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="prevPage()" id="btn-prev-page" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs text-slate-200 font-semibold flex items-center space-x-1">
+                            <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+                            <span>Previous</span>
+                        </button>
+                        <span id="page-num-display" class="text-xs font-mono text-blue-400 px-2">Page 1 of 1</span>
+                        <button onclick="nextPage()" id="btn-next-page" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs text-slate-200 font-semibold flex items-center space-x-1">
+                            <span>Next</span>
+                            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- REVIEW QUEUE VIEW -->
+        <div id="view-review-queue" class="hidden space-y-6">
+            <div class="glass-panel p-6 rounded-xl border border-amber-500/20 bg-amber-500/5 flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-bold text-amber-300 flex items-center space-x-2">
+                        <i data-lucide="alert-octagon" class="w-6 h-6"></i>
+                        <span>Escalated Human Review Queue</span>
+                    </h2>
+                    <p class="text-sm text-slate-400 mt-1">Cases flagged by Fraud Detection Agent (score ≥ 0.30), low confidence, or unmapped visual documents requiring manual ops review.</p>
+                </div>
+            </div>
+            <div class="glass-panel rounded-xl overflow-hidden border border-slate-800">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-900/90 border-b border-slate-800 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                <th class="py-3 px-4">Case ID</th>
+                                <th class="py-3 px-4">Patient & Policy</th>
+                                <th class="py-3 px-4">Escalation Justification</th>
+                                <th class="py-3 px-4 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="review-queue-tbody" class="divide-y divide-slate-800/60 text-sm">
+                            <tr>
+                                <td colspan="4" class="py-8 text-center text-slate-500">No escalated cases pending review.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- AUDIT LOG VIEW -->
+        <div id="view-audit-log" class="hidden space-y-6">
+            <div class="glass-panel p-6 rounded-xl border border-slate-800">
+                <h2 class="text-xl font-bold text-white flex items-center space-x-2">
+                    <i data-lucide="history" class="w-6 h-6 text-emerald-400"></i>
+                    <span>System Audit Trail & Observability</span>
+                </h2>
+                <p class="text-sm text-slate-400 mt-1">Complete immutable trace of all multi-agent node executions, timestamps, and decision overrides.</p>
+            </div>
+            <div class="glass-panel p-6 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 space-y-2 max-h-[600px] overflow-y-auto custom-scrollbar" id="audit-log-container">
+                <div>Loading audit history...</div>
+            </div>
+        </div>
+
+        <!-- CASE DETAIL VIEW -->
+        <div id="view-case-detail" class="hidden space-y-6">
+            <div class="flex items-center justify-between">
+                <button onclick="showView('dashboard')" class="text-xs font-semibold text-slate-400 hover:text-white flex items-center space-x-1">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                    <span>Back to Dashboard</span>
+                </button>
+                <div class="flex items-center space-x-3">
+                    <button id="btn-download-pdf" onclick="downloadCasePDF()" class="px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center space-x-2">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span>Download Audit PDF Report</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Case Summary Header -->
+            <div class="glass-panel p-6 rounded-xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4" id="detail-header">
+                <!-- Injected dynamically -->
+            </div>
+
+            <!-- Main Split View Grid: Left Document Viewer / Right Agent Panels -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Left: Document & ELA Heatmap Viewer -->
+                <div class="lg:col-span-5 space-y-4">
+                    <div class="glass-panel p-4 rounded-xl border border-slate-800 flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="image" class="w-4 h-4 text-blue-400"></i>
+                            <span class="text-xs font-bold text-slate-200">Document Image & Forensics</span>
+                        </div>
+                        <button onclick="toggleELAHeatmap()" id="btn-ela-toggle" class="px-2.5 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-bold flex items-center space-x-1">
+                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                            <span id="ela-toggle-text">Show ELA Heatmap</span>
+                        </button>
+                    </div>
+
+                    <div class="glass-panel p-2 rounded-xl border border-slate-800 min-h-[480px] flex items-center justify-center bg-slate-950/80 relative overflow-hidden">
+                        <img id="doc-viewer-img" src="" alt="Document Preview" class="max-h-[600px] w-auto object-contain rounded border border-slate-800">
+                    </div>
+                </div>
+
+                <!-- Right: Multi-Agent Output Cards & Decision Panel -->
+                <div class="lg:col-span-7 space-y-4">
+                    <!-- Orchestrator Decision Card -->
+                    <div class="glass-card p-5 rounded-xl border border-blue-500/30 bg-blue-950/20 space-y-3" id="card-orchestrator">
+                        <!-- Injected -->
+                    </div>
+
+                    <!-- Collapsible Specialist Agent Details -->
+                    <div class="space-y-3" id="agent-cards-container">
+                        <!-- Injected -->
+                    </div>
+
+                    <!-- Human Override Section -->
+                    <div class="glass-panel p-5 rounded-xl border border-slate-800 space-y-3">
+                        <h3 class="text-sm font-bold text-slate-200 flex items-center space-x-2">
+                            <i data-lucide="user-check" class="w-4 h-4 text-indigo-400"></i>
+                            <span>Human Operator Override</span>
+                        </h3>
+                        <div class="flex items-center space-x-3">
+                            <select id="override-decision-select" class="px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white">
+                                <option value="APPROVE">Override to APPROVE</option>
+                                <option value="REJECT">Override to REJECT</option>
+                                <option value="ESCALATE">Override to ESCALATE</option>
+                            </select>
+                            <input type="text" id="override-notes-input" placeholder="Enter justification notes for audit log..." class="flex-1 px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white">
+                            <button onclick="submitHumanOverride()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold">Submit Override</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Upload Case Modal Dialog -->
+    <div id="upload-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm hidden">
+        <div class="glass-panel max-w-md w-full p-6 rounded-2xl border border-slate-700 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-lg text-white flex items-center space-x-2">
+                    <i data-lucide="upload-cloud" class="w-5 h-5 text-blue-400"></i>
+                    <span>Upload Insurance Document</span>
+                </h3>
+                <button onclick="closeUploadModal()" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <form id="upload-form" onsubmit="handleCaseUpload(event)" class="space-y-4">
+                <div class="border-2 border-dashed border-slate-700 hover:border-blue-500 rounded-xl p-6 text-center cursor-pointer transition bg-slate-900/50" onclick="document.getElementById('file-input').click()">
+                    <i data-lucide="file-up" class="w-10 h-10 text-blue-400 mx-auto mb-2"></i>
+                    <p class="text-xs font-semibold text-slate-200">Click to select document image or PDF</p>
+                    <p class="text-[11px] text-slate-500 mt-1">Supports PNG, JPEG, PDF, TIFF (Max 25MB)</p>
+                    <input type="file" id="file-input" class="hidden" accept=".png,.jpg,.jpeg,.pdf,.tiff" onchange="updateSelectedFileName()">
+                </div>
+                <div id="selected-file-name" class="text-xs font-mono text-blue-300 text-center hidden"></div>
+
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeUploadModal()" class="px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:bg-slate-800">Cancel</button>
+                    <button type="submit" id="btn-submit-upload" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold shadow-lg shadow-blue-600/30">Run Pipeline</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api/v1';
+        let currentCases = [];
+        let activeCase = null;
+        let filterStatus = 'ALL';
+        let isELAMode = false;
+
+        async function init() {
+            lucide.createIcons();
+            await fetchCases();
+            await fetchStats();
+        }
+
+        function openUploadModal() {
+            document.getElementById('upload-modal').classList.remove('hidden');
+        }
+
+        function closeUploadModal() {
+            document.getElementById('upload-modal').classList.add('hidden');
+            document.getElementById('upload-form').reset();
+            document.getElementById('selected-file-name').classList.add('hidden');
+        }
+
+        function updateSelectedFileName() {
+            const input = document.getElementById('file-input');
+            const nameDiv = document.getElementById('selected-file-name');
+            if (input.files.length > 0) {
+                nameDiv.innerText = `Selected: ${input.files[0].name}`;
+                nameDiv.classList.remove('hidden');
+            }
+        }
+
+        async function handleCaseUpload(e) {
+            e.preventDefault();
+            const input = document.getElementById('file-input');
+            if (!input.files.length) {
+                alert("Please select a file to upload.");
+                return;
+            }
+            const btn = document.getElementById('btn-submit-upload');
+            btn.innerText = "Processing Pipeline...";
+            btn.disabled = true;
+
+            const formData = new FormData();
+            formData.append("file", input.files[0]);
+
+            try {
+                const res = await fetch(`${API_BASE}/cases/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const newCase = await res.json();
+                closeUploadModal();
+                await fetchCases();
+                await fetchStats();
+                viewCaseDetail(newCase.case_id);
+                alert(`Case ${newCase.case_id} processed! Decision: ${newCase.status}`);
+            } catch (err) {
+                console.error("Upload error:", err);
+                alert("Failed to process uploaded file.");
+            } finally {
+                btn.innerText = "Run Pipeline";
+                btn.disabled = false;
+            }
+        }
+
+        async function fetchCases() {
+            try {
+                const res = await fetch(`${API_BASE}/cases?status=${filterStatus}`);
+                currentCases = await res.json();
+                renderCasesTable();
+                renderReviewQueue();
+                renderAuditLog();
+            } catch (err) {
+                console.error("Error fetching cases:", err);
+            }
+        }
+
+        async function fetchStats() {
+            try {
+                const res = await fetch(`${API_BASE}/cases/stats`);
+                const stats = await res.json();
+                document.getElementById('stat-total').innerText = stats.total_cases;
+                document.getElementById('stat-approved').innerText = stats.approved_cases;
+                document.getElementById('stat-rejected').innerText = stats.rejected_cases;
+                document.getElementById('stat-escalated').innerText = stats.escalated_cases;
+                document.getElementById('stat-processing').innerText = stats.processing_cases;
+                
+                const qBadge = document.getElementById('queue-badge');
+                if (qBadge) qBadge.innerText = stats.escalated_cases;
+
+                const procIcon = document.getElementById('stat-processing-icon');
+                if (procIcon) {
+                    if (stats.processing_cases > 0) {
+                        procIcon.innerHTML = `<i data-lucide="loader" class="w-4 h-4 text-blue-400 animate-spin"></i>`;
+                    } else {
+                        procIcon.innerHTML = `<i data-lucide="clock" class="w-4 h-4 text-blue-400"></i>`;
+                    }
+                    lucide.createIcons();
+                }
+            } catch (err) {
+                console.error("Error fetching stats:", err);
+            }
+        }
+
+        let currentPage = 1;
+        const pageSize = 12; // Show 12 files per page (within 10-15 requirement)
+
+        function renderCasesTable() {
+            const tbody = document.getElementById('cases-tbody');
+            if (!currentCases.length) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">No cases found matching filter.</td></tr>`;
+                updatePaginationControls(0, 0, 0, 1, 1);
+                return;
+            }
+
+            const totalItems = currentCases.length;
+            const totalPages = Math.ceil(totalItems / pageSize) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIdx = (currentPage - 1) * pageSize;
+            const endIdx = Math.min(startIdx + pageSize, totalItems);
+            const pageCases = currentCases.slice(startIdx, endIdx);
+
+            tbody.innerHTML = pageCases.map(c => {
+                const statusBadge = c.status === 'APPROVE' 
+                    ? `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">APPROVED</span>`
+                    : c.status === 'REJECT'
+                    ? `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">REJECTED</span>`
+                    : `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">ESCALATED</span>`;
+
+                const conf = c.orchestrator_result ? Math.round(c.orchestrator_result.confidence * 100) : 80;
+
+                return `
+                    <tr class="hover:bg-slate-800/40 transition cursor-pointer" onclick="viewCaseDetail('${c.case_id}')">
+                        <td class="py-3.5 px-4 font-mono text-xs font-semibold text-blue-400">${c.case_id}<br/><span class="text-slate-500 font-sans text-[11px]">${c.filename}</span></td>
+                        <td class="py-3.5 px-4 font-medium text-slate-200">${c.patient_name || 'Unknown'}<br/><span class="text-xs text-slate-400 font-mono">${c.policy_number || 'N/A'}</span></td>
+                        <td class="py-3.5 px-4"><span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">${c.doc_type}</span></td>
+                        <td class="py-3.5 px-4">${statusBadge}</td>
+                        <td class="py-3.5 px-4">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                    <div class="h-full bg-blue-500" style="width: ${conf}%"></div>
+                                </div>
+                                <span class="text-xs font-mono text-slate-400">${conf}%</span>
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                            <button onclick="event.stopPropagation(); viewCaseDetail('${c.case_id}')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-200">View</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            updatePaginationControls(startIdx + 1, endIdx, totalItems, currentPage, totalPages);
+            lucide.createIcons();
+        }
+
+        function updatePaginationControls(start, end, total, page, totalPages) {
+            const pStart = document.getElementById('page-start');
+            const pEnd = document.getElementById('page-end');
+            const pTotal = document.getElementById('page-total');
+            const pNum = document.getElementById('page-num-display');
+            const btnPrev = document.getElementById('btn-prev-page');
+            const btnNext = document.getElementById('btn-next-page');
+
+            if (pStart) pStart.innerText = total > 0 ? start : 0;
+            if (pEnd) pEnd.innerText = end;
+            if (pTotal) pTotal.innerText = total;
+            if (pNum) pNum.innerText = `Page ${page} of ${totalPages}`;
+
+            if (btnPrev) btnPrev.disabled = page <= 1;
+            if (btnNext) btnNext.disabled = page >= totalPages;
+        }
+
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderCasesTable();
+            }
+        }
+
+        function nextPage() {
+            const totalPages = Math.ceil(currentCases.length / pageSize);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderCasesTable();
+            }
+        }
+
+        function renderReviewQueue() {
+            const tbody = document.getElementById('review-queue-tbody');
+            const escalated = currentCases.filter(c => c.status === 'ESCALATE');
+            if (!escalated.length) {
+                tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-slate-500">No escalated cases pending review.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = escalated.map(c => `
+                <tr class="hover:bg-slate-800/40 transition">
+                    <td class="py-3.5 px-4 font-mono text-xs text-amber-400 font-semibold">${c.case_id}</td>
+                    <td class="py-3.5 px-4">${c.patient_name}<br/><span class="text-xs font-mono text-slate-400">${c.policy_number}</span></td>
+                    <td class="py-3.5 px-4 text-xs text-slate-300">${c.orchestrator_result ? c.orchestrator_result.justification.slice(0, 120) + '...' : 'Fraud anomaly / low confidence'}</td>
+                    <td class="py-3.5 px-4 text-right">
+                        <button onclick="viewCaseDetail('${c.case_id}')" class="px-3 py-1 rounded bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold">Review Case</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderAuditLog() {
+            const container = document.getElementById('audit-log-container');
+            const logs = [];
+            currentCases.forEach(c => {
+                (c.audit_trail || []).forEach(a => {
+                    logs.push({ case_id: c.case_id, ...a });
+                });
+            });
+            logs.sort((a,b) => b.timestamp.localeCompare(a.timestamp));
+            container.innerHTML = logs.map(l => `
+                <div class="border-b border-slate-800 pb-1 flex items-start space-x-3">
+                    <span class="text-slate-500">${l.timestamp}</span>
+                    <span class="text-blue-400 font-bold">[${l.case_id}]</span>
+                    <span class="text-emerald-400">${l.agent}</span>
+                    <span class="text-slate-300">${l.details}</span>
+                </div>
+            `).join('');
+        }
+
+        async function viewCaseDetail(caseId) {
+            try {
+                const res = await fetch(`${API_BASE}/cases/${caseId}`);
+                activeCase = await res.json();
+                renderDetailView();
+                showView('case-detail');
+            } catch (err) {
+                console.error("Error loading case detail:", err);
+            }
+        }
+
+        function renderDetailView() {
+            if (!activeCase) return;
+            const c = activeCase;
+
+            // Render Header
+            const statusBadge = c.status === 'APPROVE' 
+                ? `<span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">APPROVED</span>`
+                : c.status === 'REJECT'
+                ? `<span class="px-3 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">REJECTED</span>`
+                : `<span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">ESCALATED</span>`;
+
+            document.getElementById('detail-header').innerHTML = `
+                <div>
+                    <div class="flex items-center space-x-3">
+                        <h2 class="text-2xl font-extrabold text-white font-mono">${c.case_id}</h2>
+                        ${statusBadge}
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">Submitted: ${c.created_at} | File: ${c.filename}</p>
+                </div>
+                <div class="flex items-center space-x-6 text-xs">
+                    <div>
+                        <span class="text-slate-400 block">Patient Name</span>
+                        <span class="font-bold text-white">${c.patient_name || 'N/A'}</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block">Policy Number</span>
+                        <span class="font-mono font-bold text-blue-400">${c.policy_number || 'N/A'}</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block">Document Category</span>
+                        <span class="font-bold text-white">${c.doc_type}</span>
+                    </div>
+                </div>
+            `;
+
+            // Document Image View
+            isELAMode = false;
+            document.getElementById('ela-toggle-text').innerText = "Show ELA Heatmap";
+            document.getElementById('doc-viewer-img').src = `${API_BASE}/cases/${c.case_id}/image`;
+
+            // Orchestrator Card
+            const orch = c.orchestrator_result || {};
+            document.getElementById('card-orchestrator').innerHTML = `
+                <div class="flex items-center justify-between border-b border-blue-500/20 pb-2">
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-blue-400">Orchestrator Agent Final Decision</span>
+                    <span class="text-xs font-mono text-slate-400">Confidence: ${Math.round((orch.confidence || 0.8)*100)}%</span>
+                </div>
+                <div class="text-xs text-slate-200 whitespace-pre-line leading-relaxed">${orch.justification || 'Processing...'}</div>
+            `;
+
+            // Agent Specialist Cards
+            document.getElementById('agent-cards-container').innerHTML = `
+                <!-- Classifier -->
+                <div class="glass-card p-4 rounded-xl border border-slate-800">
+                    <div class="text-xs font-bold text-slate-300 mb-1 flex items-center justify-between">
+                        <span>1. Document Classifier Agent</span>
+                        <span class="text-blue-400 font-mono">${Math.round((c.classifier_result?.confidence || 0.9)*100)}%</span>
+                    </div>
+                    <div class="text-xs text-slate-400">${c.classifier_result?.reasoning || 'Identified document structure'}</div>
+                </div>
+
+                <!-- KYC -->
+                <div class="glass-card p-4 rounded-xl border border-slate-800">
+                    <div class="text-xs font-bold text-slate-300 mb-1 flex items-center justify-between">
+                        <span>2. KYC & Identity Verification Agent</span>
+                        <span class="${c.kyc_result?.kyc_passed ? 'text-emerald-400' : 'text-rose-400'} font-bold">${c.kyc_result?.kyc_passed ? 'PASSED' : 'FAILED'}</span>
+                    </div>
+                    <div class="text-xs text-slate-400">ELA Tamper Score: <span class="font-mono text-amber-400">${c.kyc_result?.ela_tamper_score || 0.0}</span> | Expired: ${c.kyc_result?.is_expired ? 'YES' : 'NO'}</div>
+                </div>
+
+                <!-- Claims -->
+                <div class="glass-card p-4 rounded-xl border border-slate-800">
+                    <div class="text-xs font-bold text-slate-300 mb-1 flex items-center justify-between">
+                        <span>3. Claims Extraction Agent</span>
+                        <span class="text-emerald-400 font-mono">$${(c.claims_result?.extracted_fields?.claim_amount || 0).toLocaleString()}</span>
+                    </div>
+                    <div class="text-xs text-slate-400">CPT: ${(c.claims_result?.extracted_fields?.cpt_codes || []).join(', ')} | ICD-10: ${(c.claims_result?.extracted_fields?.icd10_codes || []).join(', ')}</div>
+                </div>
+
+                <!-- Policy RAG -->
+                <div class="glass-card p-4 rounded-xl border border-slate-800">
+                    <div class="text-xs font-bold text-slate-300 mb-1 flex items-center justify-between">
+                        <span>4. Policy RAG Agent</span>
+                        <span class="${c.policy_result?.covered ? 'text-emerald-400' : 'text-rose-400'} font-bold">${c.policy_result?.covered ? 'COVERED ('+c.policy_result?.coverage_percentage+'%)' : 'EXCLUDED'}</span>
+                    </div>
+                    <div class="text-xs text-slate-400">Matched Section: ${c.policy_result?.matched_clauses?.[0]?.section || 'Gold Plan Coverage'}</div>
+                </div>
+
+                <!-- Fraud -->
+                <div class="glass-card p-4 rounded-xl border border-slate-800">
+                    <div class="text-xs font-bold text-slate-300 mb-1 flex items-center justify-between">
+                        <span>5. Fraud Detection Agent</span>
+                        <span class="text-amber-400 font-mono">Score: ${c.fraud_result?.fraud_score || 0.05} (${c.fraud_result?.risk_level || 'LOW'})</span>
+                    </div>
+                    <div class="text-xs text-slate-400">Anomalies: ${(c.fraud_result?.anomalies || ['None']).join('; ')}</div>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function toggleELAHeatmap() {
+            if (!activeCase) return;
+            isELAMode = !isELAMode;
+            const btnText = document.getElementById('ela-toggle-text');
+            const img = document.getElementById('doc-viewer-img');
+            
+            if (isELAMode) {
+                btnText.innerText = "Show Original Image";
+                img.src = `${API_BASE}/cases/${activeCase.case_id}/ela`;
+            } else {
+                btnText.innerText = "Show ELA Heatmap";
+                img.src = `${API_BASE}/cases/${activeCase.case_id}/image`;
+            }
+        }
+
+        async function submitHumanOverride() {
+            if (!activeCase) return;
+            const decision = document.getElementById('override-decision-select').value;
+            const notes = document.getElementById('override-notes-input').value;
+
+            try {
+                const res = await fetch(`${API_BASE}/cases/${activeCase.case_id}/override`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ decision, notes })
+                });
+                activeCase = await res.json();
+                renderDetailView();
+                await fetchStats();
+                alert(`Case decision successfully overridden to ${decision}!`);
+            } catch (err) {
+                console.error("Error submitting override:", err);
+            }
+        }
+
+        function downloadCasePDF() {
+            if (!activeCase) return;
+            window.open(`${API_BASE}/reports/${activeCase.case_id}/download`, '_blank');
+        }
+
+        async function ingestDatasetBatch() {
+            try {
+                alert("Triggering intake of 500 dataset cases...");
+                const res = await fetch(`${API_BASE}/cases/ingest-dataset?limit=500`, { method: 'POST' });
+                const data = await res.json();
+                await fetchCases();
+                await fetchStats();
+                alert(`Successfully ingested ${data.processed_count} cases!`);
+            } catch (err) {
+                console.error("Error ingesting dataset:", err);
+            }
+        }
+
+        function showView(viewId) {
+            ['dashboard', 'review-queue', 'audit-log', 'case-detail'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden');
+            });
+            document.getElementById(`view-${viewId}`).classList.remove('hidden');
+        }
+
+        function setFilterStatus(status) {
+            filterStatus = status;
+            currentPage = 1;
+            ['ALL', 'APPROVE', 'REJECT', 'ESCALATE'].forEach(s => {
+                const btn = document.getElementById(`filter-status-${s}`);
+                if (s === status) {
+                    btn.className = "px-3 py-1 rounded-md text-xs font-bold bg-blue-600 text-white";
+                } else {
+                    btn.className = "px-3 py-1 rounded-md text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent";
+                }
+            });
+            fetchCases();
+        }
+
+        let searchDebounceTimeout = null;
+        function filterCases() {
+            if (searchDebounceTimeout) clearTimeout(searchDebounceTimeout);
+            searchDebounceTimeout = setTimeout(() => {
+                currentPage = 1;
+                const query = document.getElementById('search-input').value.toLowerCase();
+                const filtered = currentCases.filter(c => 
+                    (c.case_id && c.case_id.toLowerCase().includes(query)) ||
+                    (c.patient_name && c.patient_name.toLowerCase().includes(query)) ||
+                    (c.policy_number && c.policy_number.toLowerCase().includes(query)) ||
+                    (c.filename && c.filename.toLowerCase().includes(query))
+                );
+                renderCasesTable();
+            }, 150);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
