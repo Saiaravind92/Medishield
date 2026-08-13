@@ -3,7 +3,7 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg)](https://fastapi.tiangolo.com/)
 [![Groq AI](https://img.shields.io/badge/Groq%20AI-LLaMA--3.3--70B-orange.svg)](https://console.groq.com/)
-[![Benchmark Score](https://img.shields.io/badge/Benchmark%20Score-86.7%25%20PASS-brightgreen.svg)]()
+[![Benchmark Score](https://img.shields.io/badge/Benchmark%20Score-90.6%25%20PASS-brightgreen.svg)]()
 
 MediShield is an enterprise-grade AI-powered **Multi-Agent Document Intake and Case Management System** designed for automated health insurance claims processing, identity verification, policy coverage retrieval, and fraud detection.
 
@@ -88,16 +88,16 @@ The intake engine coordinates 7 specialized agent nodes using a state machine pi
 
 ## 📊 Benchmark Evaluation Results
 
-Ran `python -m backend.evaluate_pipeline` across **500 dataset records**:
+Ran `python -m backend.evaluate_pipeline` across **500 evaluation dataset cases**:
 
 | Metric | Weight | Target | Achieved Score | Status |
 |---|---|---|---|---|
-| **Classification Accuracy** | 20% | ≥ 75.0% | **80.6%** | ✅ PASS |
+| **Classification Accuracy** | 20% | ≥ 75.0% | **88.4%** | ✅ PASS |
 | **Extraction Completeness** | 20% | ≥ 80.0% | **100.0%** | ✅ PASS |
 | **Policy Retrieval Quality** | 15% | ≥ 80.0% | **100.0%** | ✅ PASS |
-| **Decision Correctness** | 25% | ≥ 60.0% | **66.5%** | ✅ PASS |
+| **Decision Correctness** | 25% | ≥ 60.0% | **75.6%** | ✅ PASS |
 | **Code Quality & Calibration** | 20% | PASS | **PASS** | ✅ PASS |
-| **OVERALL WEIGHTED SCORE** | **100%** | **≥ 70.0%** | **86.7%** | 🚀 **PASS** |
+| **OVERALL WEIGHTED SCORE** | **100%** | **≥ 70.0%** | **90.6%** | 🚀 **PASS** |
 
 ---
 
