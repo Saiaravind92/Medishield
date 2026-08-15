@@ -1,8 +1,9 @@
 import os
 import shutil
 import uuid
+import time
 from typing import List, Optional
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Query
+from fastapi import APIRouter, UploadFile, File, HTTPException, Query
 from fastapi.responses import FileResponse
 from backend.app.models import Case, HumanOverrideRequest, DecisionType, AuditEntry
 from backend.app.storage import storage_manager
@@ -142,7 +143,7 @@ def override_case_decision(case_id: str, req: HumanOverrideRequest):
     case.status = req.decision
     
     case.audit_trail.append(AuditEntry(
-        timestamp=pipeline_graph.time.strftime("%Y-%m-%d %H:%M:%S") if hasattr(pipeline_graph, "time") else "2026-08-13 17:50:00",
+        timestamp=time.strftime("%Y-%m-%d %H:%M:%S"),
         agent="HUMAN_OPERATOR",
         action="DECISION_OVERRIDE",
         details=f"Decision overridden to {req.decision.value}. Notes: {req.notes}"

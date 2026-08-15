@@ -2,7 +2,7 @@
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg)](https://fastapi.tiangolo.com/)
-[![Groq AI](https://img.shields.io/badge/Groq%20AI-LLaMA--3.3--70B-orange.svg)](https://console.groq.com/)
+[![Groq AI](https://img.shields.io/badge/Groq%20AI-GPT--OSS--120B-orange.svg)](https://console.groq.com/)
 [![Benchmark Score](https://img.shields.io/badge/Benchmark%20Score-90.6%25%20PASS-brightgreen.svg)]()
 
 MediShield is an enterprise-grade AI-powered **Multi-Agent Document Intake and Case Management System** designed for automated health insurance claims processing, identity verification, policy coverage retrieval, and fraud detection.
@@ -13,7 +13,7 @@ MediShield is an enterprise-grade AI-powered **Multi-Agent Document Intake and C
 
 ### 🧠 Artificial Intelligence & Agent Frameworks
 - **Agentic Workflow Framework**: LangGraph / LangChain state graph state-machine orchestration.
-- **LLM Vision & Inference**: Groq LLaMA-3.3 70B (`llama-3.3-70b-versatile`) + Multi-provider support (OpenAI GPT-4o / Anthropic Claude / Google Gemini).
+- **LLM Vision & Inference**: Groq GPT OSS 120B (`openai/gpt-oss-120b`) / Qwen3.6 27B (`qwen/qwen3.6-27b`) + Multi-provider support (OpenAI GPT-4o / Anthropic Claude / Google Gemini).
 - **OCR Engine**: PyTesseract + PIL Vision preprocessing.
 - **RAG & Vector Search**: In-memory Policy Vector Store + pdfplumber PDF chunking & regex semantic matching.
 - **Forensic Imaging**: OpenCV & NumPy Error Level Analysis (ELA) pixel variance tamper detection.
@@ -43,7 +43,7 @@ MediShield is an enterprise-grade AI-powered **Multi-Agent Document Intake and C
                                                 ▼
                                   ┌───────────────────────────┐
                                   │     CLASSIFIER AGENT      │
-                                  │ (Groq LLaMA 3.3 / Vision) │
+                                  │ (Groq GPT OSS 120B / Vision) │
                                   └─────────────┬─────────────┘
                                                 │ Routes by Doc Type
          ┌──────────────────────┬───────────────┴───────────────┬──────────────────────┐
@@ -75,7 +75,7 @@ MediShield is an enterprise-grade AI-powered **Multi-Agent Document Intake and C
 
 The intake engine coordinates 7 specialized agent nodes using a state machine pipeline:
 
-1. **Classifier Agent**: Categorizes incoming scans into `CLAIM_FORM`, `ID_DOCUMENT`, `DISCHARGE_SUMMARY`, `PRESCRIPTION`, `POLICY_AMENDMENT`, or `UNKNOWN` using Groq LLaMA-3.3 Vision & Layout heuristic analysis.
+1. **Classifier Agent**: Categorizes incoming scans into `CLAIM_FORM`, `ID_DOCUMENT`, `DISCHARGE_SUMMARY`, `PRESCRIPTION`, `POLICY_AMENDMENT`, or `UNKNOWN` using Groq GPT OSS 120B / Qwen3.6 Vision & Layout heuristic analysis.
 2. **KYC Agent**: Validates member identity, verifies document expiry dates, and executes **Error Level Analysis (ELA)** pixel variance tamper detection.
 3. **Claims Agent**: Extracts structured financial fields, provider NPIs, service dates, **CPT procedure codes**, and **ICD-10 diagnosis codes**.
 4. **Policy RAG Agent**: Performs vector semantic search over `medishield_gold_plan.pdf` and `medishield_silver_plan.pdf` to determine exact coverage rates and exclusion clauses.
@@ -117,7 +117,7 @@ Automated pipeline verification results executed across the 7 sample document in
 ### 🛠️ Subsystem API Test Suite Matrix
 
 - **`GET /api/v1/cases/stats`**: ✅ **PASS** (Sub-2ms response time via SQLite WAL mode & indexes).
-- **`POST /api/v1/cases/upload`**: ✅ **PASS** (Processes PNG/JPG via Groq LLaMA-3.3 Vision & OCR).
+- **`POST /api/v1/cases/upload`**: ✅ **PASS** (Processes PNG/JPG via Groq GPT OSS 120B Vision & OCR).
 - **`GET /api/v1/cases/{case_id}/image`**: ✅ **PASS** (Returns original document image).
 - **`GET /api/v1/cases/{case_id}/ela`**: ✅ **PASS** (Generates & returns Error Level Analysis pixel tamper heatmap).
 - **`GET /api/v1/reports/{case_id}/download`**: ✅ **PASS** (Generates ReportLab PDF Audit Certificate).
@@ -153,7 +153,7 @@ cp .env.example .env
 Edit `.env`:
 ```env
 GROQ_API_KEY=gsk_your_groq_api_key_here
-GROQ_MODEL=llama-3.3-70b-versatile
+GROQ_MODEL=openai/gpt-oss-120b
 ```
 
 ### 3. Install Dependencies

@@ -32,7 +32,7 @@ def derive_expected_decision(item: Dict[str, Any]) -> str:
 def run_evaluation():
     metadata_path = settings.METADATA_FILE
     if not os.path.exists(metadata_path):
-        print(f"Error: Metadata file not found at {metadata_path}. Run dataset generation scripts first.")
+        print(f"Error: Metadata file not found at {metadata_path}. Please check dataset/metadata.json.")
         return
 
     with open(metadata_path, 'r', encoding='utf-8') as f:

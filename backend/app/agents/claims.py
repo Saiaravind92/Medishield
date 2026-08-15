@@ -1,5 +1,4 @@
 import os
-import re
 from typing import Dict, Any, List
 from backend.app.models import ClaimsResult, ExtractedClaimsFields, DocumentType
 from backend.app.ocr import extract_raw_text, parse_clinical_financial_patterns

@@ -45,7 +45,7 @@ class ClassifierAgent:
                 data = json.loads(response.choices[0].message.content)
                 dtype = DocumentType(data.get("doc_type", "UNKNOWN"))
                 conf = float(data.get("confidence", 0.90))
-                reasoning = data.get("reasoning", "Classified via Groq LLaMA-3.3 Vision & Text Engine.")
+                reasoning = data.get("reasoning", "Classified via Groq GPT OSS 120B / Qwen3.6 Text & Vision Engine.")
                 return ClassifierResult(
                     doc_type=dtype,
                     confidence=conf,
