@@ -17,6 +17,7 @@ MediShield is an enterprise-grade AI-powered **Multi-Agent Document Intake and C
 - **OCR Engine**: PyTesseract + PIL Vision preprocessing.
 - **RAG & Vector Search**: In-memory Policy Vector Store + pdfplumber PDF chunking & regex semantic matching.
 - **Forensic Imaging**: OpenCV & NumPy Error Level Analysis (ELA) pixel variance tamper detection.
+- **AI & Security Guardrails**: `guardrails.py` payload security, prompt injection sanitization, bounded confidence schemas, and deterministic rule enforcement.
 
 ### ⚡ Backend & Infrastructure
 - **Web Framework**: FastAPI (Async Python REST API server with Pydantic validation).
@@ -82,6 +83,22 @@ The intake engine coordinates 7 specialized agent nodes using a state machine pi
 5. **Fraud Detection Agent**: Analyzes historical patient claim frequency, duplicate submissions, billing spikes, and expired credential risks.
 6. **Orchestrator Agent**: Synthesizes agent outputs to issue deterministic **APPROVE**, **REJECT**, or **ESCALATE** decisions with generative narrative summaries.
 7. **Human Review & Override**: Enables operations teams to review escalated cases and manually override decisions with full audit logging.
+
+---
+
+## 🛡️ AI & Security Guardrail Subsystem (`guardrails.py`)
+
+MediShield incorporates an enterprise-grade multi-layered **Safety, Validation, and Security Guardrail Framework** (`backend/app/guardrails.py`):
+
+| Guardrail Layer | Scope & Mechanism | Enforcement Point |
+|---|---|---|
+| **Payload Security** | Whitelists allowed file extensions (`.png`, `.jpg`, `.jpeg`, `.pdf`, `.tiff`), enforces $15\text{MB}$ file size limit, and sanitizes filenames against directory traversal attacks. | Ingestion REST API (`POST /api/v1/cases/upload`) |
+| **Prompt Injection Protection** | Scans extracted OCR text for adversarial jailbreaks (`ignore previous instructions`, `system prompt override`, `<script>`) and sanitizes text prior to LLM reasoning. | Classifier Agent pre-processing |
+| **Output Schema Validation** | Enforces valid Pydantic enum types for `DocumentType` and bounds LLM confidence scores strictly within $[0.0, 1.0]$. | Classifier Agent post-processing |
+| **Claims Data Integrity** | Validates non-negative claim amounts ($\ge \$0.00$), verifies 10-digit NPI provider number patterns, and flags corrupted billing fields. | Claims Specialist Agent |
+| **Fraud Risk Calibration** | Bounds fraud risk scores within $[0.0, 1.0]$, synchronizes `LOW`, `MEDIUM`, and `HIGH` risk levels, and flags digital ELA pixel tampering. | Fraud Detection Agent |
+| **Deterministic Decision Rules** | Enforces strict multi-agent agreement rules: $100\%$ pass on KYC, schema validation, and policy coverage required for auto-approval. | Orchestrator Node |
+| **Human Review & Audit Trail** | Routes ambiguous cases ($< 0.6$ confidence or high fraud score) to human ops review with full immutable audit logging. | Case Management UI & SQLite WAL DB |
 
 ---
 

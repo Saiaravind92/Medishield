@@ -10,6 +10,7 @@ from backend.app.storage import storage_manager
 from backend.app.graph import pipeline_graph
 from backend.app.ela import compute_ela_score
 from backend.app.config import settings
+from backend.app.guardrails import validate_uploaded_file
 
 router = APIRouter(prefix="/cases", tags=["Cases"])
 
@@ -86,12 +87,16 @@ def get_case(case_id: str):
 
 @router.post("/upload", response_model=Case)
 async def upload_document(file: UploadFile = File(...)):
+    file_bytes = await file.read()
+    validate_uploaded_file(file, file_bytes=file_bytes)
+    await file.seek(0)
+    
     case_id = f"CASE-{uuid.uuid4().hex[:8].upper()}"
-    filename = file.filename
+    filename = file.filename or "document"
     dest_path = os.path.join(settings.STORAGE_DIR, f"{case_id}_{filename}")
     
     with open(dest_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+        buffer.write(file_bytes)
         
     case = pipeline_graph.run_case_pipeline(case_id, dest_path)
     return case

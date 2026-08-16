@@ -6,6 +6,8 @@ from backend.app.models import ClassifierResult, DocumentType
 from backend.app.ocr import extract_raw_text
 from backend.app.config import settings
 
+from backend.app.guardrails import validate_classifier_output, sanitize_and_inspect_text
+
 try:
     from groq import Groq
     GROQ_AVAILABLE = True
@@ -16,6 +18,7 @@ class ClassifierAgent:
     def process(self, file_path: str, case_metadata: Dict[str, Any] = None) -> ClassifierResult:
         filename = os.path.basename(file_path).lower()
         raw_text = extract_raw_text(file_path).lower()
+        raw_text, suspicious_injection = sanitize_and_inspect_text(raw_text)
         
         # 1. Try Groq API if API key is provided
         if GROQ_AVAILABLE and settings.GROQ_API_KEY and len(settings.GROQ_API_KEY.strip()) > 5:
@@ -43,9 +46,12 @@ class ClassifierAgent:
                     max_tokens=300
                 )
                 data = json.loads(response.choices[0].message.content)
+                data = validate_classifier_output(data)
                 dtype = DocumentType(data.get("doc_type", "UNKNOWN"))
                 conf = float(data.get("confidence", 0.90))
                 reasoning = data.get("reasoning", "Classified via Groq GPT OSS 120B / Qwen3.6 Text & Vision Engine.")
+                if suspicious_injection:
+                    reasoning += " [Guardrail Alert: Input text contained potential prompt injection patterns that were sanitized]"
                 return ClassifierResult(
                     doc_type=dtype,
                     confidence=conf,
