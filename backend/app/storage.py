@@ -85,9 +85,9 @@ class StorageManager:
             query += " AND doc_type = ?"
             params.append(doc_type)
         if search:
-            query += " AND (patient_name LIKE ? OR policy_number LIKE ? OR case_id LIKE ? OR filename LIKE ?)"
+            query += " AND (patient_name LIKE ? OR policy_number LIKE ? OR case_id LIKE ? OR filename LIKE ? OR doc_type LIKE ? OR case_json LIKE ?)"
             s = f"%{search}%"
-            params.extend([s, s, s, s])
+            params.extend([s, s, s, s, s, s])
             
         query += " ORDER BY created_at DESC"
         

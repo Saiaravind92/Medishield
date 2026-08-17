@@ -370,6 +370,19 @@
         </div>
     </div>
 
+    <!-- Pipeline Result Modal Dialog -->
+    <div id="result-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md hidden">
+        <div class="glass-panel max-w-lg w-full p-6 rounded-2xl border border-slate-700 shadow-2xl space-y-5 text-center">
+            <div id="result-modal-content" class="space-y-4">
+                <!-- Dynamically injected decision icon, status badge, title, and message -->
+            </div>
+            <div class="flex items-center justify-center space-x-3 pt-2">
+                <button onclick="closeResultModal()" class="px-4 py-2 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">Close</button>
+                <button id="btn-view-result-detail" onclick="viewResultDetail()" class="px-5 py-2 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30">Inspect Full Case Details</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_BASE = 'http://localhost:8000/api/v1';
         let currentCases = [];
@@ -402,6 +415,79 @@
             }
         }
 
+        let activeResultCaseId = null;
+
+        function showPipelineResultModal(c) {
+            activeResultCaseId = c.case_id;
+            const container = document.getElementById('result-modal-content');
+            
+            let iconHtml = '';
+            let badgeHtml = '';
+            let titleText = '';
+            let msgHtml = '';
+
+            if (c.status === 'APPROVE') {
+                iconHtml = `
+                    <div class="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto shadow-xl shadow-emerald-500/20">
+                        <i data-lucide="check-circle-2" class="w-10 h-10"></i>
+                    </div>`;
+                badgeHtml = `<span class="px-3.5 py-1 rounded-full text-xs font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">APPROVED</span>`;
+                titleText = `Document Claim Approved ✓`;
+                msgHtml = `
+                    <div class="bg-emerald-950/40 border border-emerald-500/30 p-4 rounded-xl text-xs text-emerald-200 leading-relaxed text-left space-y-1">
+                        <p class="font-bold text-emerald-300">✓ Automatic Approval Granted:</p>
+                        <p>All 4 verification checks passed: Member KYC verified, claim schema valid, policy procedure covered ($100\%$), and low fraud risk score.</p>
+                    </div>`;
+            } else if (c.status === 'REJECT') {
+                iconHtml = `
+                    <div class="w-16 h-16 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/40 flex items-center justify-center mx-auto shadow-xl shadow-rose-500/20">
+                        <i data-lucide="x-circle" class="w-10 h-10"></i>
+                    </div>`;
+                badgeHtml = `<span class="px-3.5 py-1 rounded-full text-xs font-extrabold bg-rose-500/20 text-rose-400 border border-rose-500/30">REJECTED</span>`;
+                titleText = `Document Claim Rejected ✕`;
+                msgHtml = `
+                    <div class="bg-rose-950/40 border border-rose-500/30 p-4 rounded-xl text-xs text-rose-200 leading-relaxed text-left space-y-1">
+                        <p class="font-bold text-rose-300">✕ Compliance Rejection Issued:</p>
+                        <p>Document failed mandatory standards: Identity verification failed, procedure excluded by insurance policy, or claim schema corrupted.</p>
+                    </div>`;
+            } else {
+                iconHtml = `
+                    <div class="w-16 h-16 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center mx-auto shadow-xl shadow-amber-500/20">
+                        <i data-lucide="alert-triangle" class="w-10 h-10"></i>
+                    </div>`;
+                badgeHtml = `<span class="px-3.5 py-1 rounded-full text-xs font-extrabold bg-amber-500/20 text-amber-400 border border-amber-500/30">ESCALATED (WARNING)</span>`;
+                titleText = `Escalated for Human Review ⚠️`;
+                msgHtml = `
+                    <div class="bg-amber-950/40 border border-amber-500/30 p-4 rounded-xl text-xs text-amber-200 leading-relaxed text-left space-y-1">
+                        <p class="font-bold text-amber-300">⚠️ Risk Flagged / Escalation Triggered:</p>
+                        <p>Elevated fraud score or low model confidence detected. Case routed to Human Review Queue for manual ops review.</p>
+                    </div>`;
+            }
+
+            container.innerHTML = `
+                ${iconHtml}
+                <div>
+                    ${badgeHtml}
+                    <h3 class="text-xl font-extrabold text-white mt-2">${titleText}</h3>
+                    <p class="text-xs font-mono text-slate-400 mt-0.5">Case ID: ${c.case_id} | File: ${c.filename}</p>
+                </div>
+                ${msgHtml}
+            `;
+            document.getElementById('result-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeResultModal() {
+            document.getElementById('result-modal').classList.add('hidden');
+        }
+
+        function viewResultDetail() {
+            closeResultModal();
+            if (activeResultCaseId) {
+                viewCaseDetail(activeResultCaseId);
+            }
+        }
+
         async function handleCaseUpload(e) {
             e.preventDefault();
             const input = document.getElementById('file-input');
@@ -425,8 +511,7 @@
                 closeUploadModal();
                 await fetchCases();
                 await fetchStats();
-                viewCaseDetail(newCase.case_id);
-                alert(`Case ${newCase.case_id} processed! Decision: ${newCase.status}`);
+                showPipelineResultModal(newCase);
             } catch (err) {
                 console.error("Upload error:", err);
                 alert("Failed to process uploaded file.");
@@ -438,7 +523,13 @@
 
         async function fetchCases() {
             try {
-                const res = await fetch(`${API_BASE}/cases?status=${filterStatus}`);
+                const searchInput = document.getElementById('search-input');
+                const searchQuery = searchInput ? searchInput.value.trim() : '';
+                let url = `${API_BASE}/cases?status=${filterStatus}`;
+                if (searchQuery) {
+                    url += `&search=${encodeURIComponent(searchQuery)}`;
+                }
+                const res = await fetch(url);
                 currentCases = await res.json();
                 renderCasesTable();
                 renderReviewQueue();
@@ -497,10 +588,10 @@
 
             tbody.innerHTML = pageCases.map(c => {
                 const statusBadge = c.status === 'APPROVE' 
-                    ? `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">APPROVED</span>`
+                    ? `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 mr-1 text-emerald-400"></i> APPROVED</span>`
                     : c.status === 'REJECT'
-                    ? `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">REJECTED</span>`
-                    : `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">ESCALATED</span>`;
+                    ? `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30"><i data-lucide="x-circle" class="w-3.5 h-3.5 mr-1 text-rose-400"></i> REJECTED</span>`
+                    : `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30"><i data-lucide="alert-triangle" class="w-3.5 h-3.5 mr-1 text-amber-400"></i> ESCALATED</span>`;
 
                 const conf = c.orchestrator_result ? Math.round(c.orchestrator_result.confidence * 100) : 80;
 
@@ -614,12 +705,12 @@
             if (!activeCase) return;
             const c = activeCase;
 
-            // Render Header
+            // Render Header Status Badge
             const statusBadge = c.status === 'APPROVE' 
-                ? `<span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">APPROVED</span>`
+                ? `<span class="inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"><i data-lucide="check-circle-2" class="w-4 h-4 mr-1.5 text-emerald-400"></i> APPROVED</span>`
                 : c.status === 'REJECT'
-                ? `<span class="px-3 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">REJECTED</span>`
-                : `<span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">ESCALATED</span>`;
+                ? `<span class="inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-rose-500/20 text-rose-400 border border-rose-500/30"><i data-lucide="x-circle" class="w-4 h-4 mr-1.5 text-rose-400"></i> REJECTED</span>`
+                : `<span class="inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-amber-500/20 text-amber-400 border border-amber-500/30"><i data-lucide="alert-triangle" class="w-4 h-4 mr-1.5 text-amber-400"></i> ESCALATED (WARNING)</span>`;
 
             document.getElementById('detail-header').innerHTML = `
                 <div>
@@ -650,14 +741,52 @@
             document.getElementById('ela-toggle-text').innerText = "Show ELA Heatmap";
             document.getElementById('doc-viewer-img').src = `${API_BASE}/cases/${c.case_id}/image`;
 
-            // Orchestrator Card
+            // Orchestrator Card with Rich Icon Banner
             const orch = c.orchestrator_result || {};
+            
+            let heroBanner = '';
+            if (c.status === 'APPROVE') {
+                heroBanner = `
+                    <div class="flex items-center space-x-3 p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-300">
+                        <div class="w-9 h-9 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-extrabold text-sm text-emerald-400">CLAIM APPROVED ✓</h4>
+                            <p class="text-xs text-emerald-200/90 mt-0.5">All 4 agent verification standards passed (KYC passed, schema valid, covered, low fraud score).</p>
+                        </div>
+                    </div>`;
+            } else if (c.status === 'REJECT') {
+                heroBanner = `
+                    <div class="flex items-center space-x-3 p-3.5 rounded-xl bg-rose-950/40 border border-rose-500/30 text-rose-300">
+                        <div class="w-9 h-9 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="x-circle" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-extrabold text-sm text-rose-400">CLAIM REJECTED ✕</h4>
+                            <p class="text-xs text-rose-200/90 mt-0.5">Compliance rejection: Failed identity checks, procedure excluded, or claim schema corrupted.</p>
+                        </div>
+                    </div>`;
+            } else {
+                heroBanner = `
+                    <div class="flex items-center space-x-3 p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-300">
+                        <div class="w-9 h-9 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-extrabold text-sm text-amber-400">CLAIM ESCALATED (WARNING) ⚠️</h4>
+                            <p class="text-xs text-amber-200/90 mt-0.5">Elevated fraud score or low confidence detected. Routed to Human Review Queue for audit.</p>
+                        </div>
+                    </div>`;
+            }
+
             document.getElementById('card-orchestrator').innerHTML = `
                 <div class="flex items-center justify-between border-b border-blue-500/20 pb-2">
-                    <span class="text-xs font-extrabold uppercase tracking-wider text-blue-400">Orchestrator Agent Final Decision</span>
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-blue-400">Orchestrator Agent Synthesis</span>
                     <span class="text-xs font-mono text-slate-400">Confidence: ${Math.round((orch.confidence || 0.8)*100)}%</span>
                 </div>
-                <div class="text-xs text-slate-200 whitespace-pre-line leading-relaxed">${orch.justification || 'Processing...'}</div>
+                ${heroBanner}
+                <div class="text-xs text-slate-200 whitespace-pre-line leading-relaxed mt-2">${orch.justification || 'Processing decision synthesis...'}</div>
             `;
 
             // Agent Specialist Cards
@@ -789,14 +918,7 @@
             if (searchDebounceTimeout) clearTimeout(searchDebounceTimeout);
             searchDebounceTimeout = setTimeout(() => {
                 currentPage = 1;
-                const query = document.getElementById('search-input').value.toLowerCase();
-                const filtered = currentCases.filter(c => 
-                    (c.case_id && c.case_id.toLowerCase().includes(query)) ||
-                    (c.patient_name && c.patient_name.toLowerCase().includes(query)) ||
-                    (c.policy_number && c.policy_number.toLowerCase().includes(query)) ||
-                    (c.filename && c.filename.toLowerCase().includes(query))
-                );
-                renderCasesTable();
+                fetchCases();
             }, 150);
         }
 
